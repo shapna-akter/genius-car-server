@@ -23,7 +23,8 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
       const serviceCollection = client.db("geniusCar").collection("services"); 
-      
+      const orderCollection = client.db("geniusCar").collection("orders") //orders database
+
       // 1. data load korar jonno API banabo
       app.get('/services', async(req, res) =>{
         const query = {} // sobgula k pawar jonno
@@ -38,6 +39,13 @@ async function run() {
         const query = {_id: ObjectId(id)}; // specific id'r neyar jonno
         const service = await serviceCollection.findOne(query);
         res.send(service)
+      })
+
+      //orders API
+      app.post('/orders', async(req, res) => {
+        const order = req.body;
+        const result = await orderCollection.insertOne(order);
+        res.send(result)
       })
 
     } finally {
