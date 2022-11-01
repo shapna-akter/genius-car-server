@@ -20,11 +20,30 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 // console.log(uri);
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+async function run() {
+    try {
+      const serviceCollection = client.db("geniusCar").collection("services"); 
+      
+      // 1. data load korar jonno API banabo
+      app.get('/services', async(req, res) =>{
+        const query = {} // sobgula k pawar jonno
+        const cursor = serviceCollection.find(query);
+        const services = await cursor.toArray();
+        res.send(services)
+      })
+      
+    } finally {
+      
+    }
+  }
+  run().catch(console.dir);
 
+
+//primary step get korbo
 app.get('/', (req, res) =>{
     res.send('genius car server is running')
 })
-
+// primary step listen korbo
 app.listen(port, (req, res) =>{
     console.log(`genius car server running on ${port}`);
 })
