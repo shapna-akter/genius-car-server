@@ -26,12 +26,31 @@ async function run() {
     const serviceCollection = client.db("geniusCar").collection("services");
     const orderCollection = client.db('geniusCar').collection('orders'); //orders database
 
+    //token er jnno function
+    function verifyJWT(req, res, next) {
+      const authHeader = req.headers.authorization;
+
+      if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorize access' })
+      }
+
+      const token = authHeader.split(' ')[1];
+
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+          return res.status(403).send({ message: 'Forbidden access' })
+        }
+        req.decoded = decoded;
+        next()
+      })
+    }
+
     //JWT Token
     app.post('/jwt', (req, res) => {
       const user = req.body;
       // console.log(user);
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1hr'});
-      res.send({token})
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+      res.send({ token })
     })
 
     // 1. data load korar jonno API banabo
@@ -51,14 +70,20 @@ async function run() {
     })
 
     //3. orders API
-    app.post('/orders', async (req, res) => {
+    app.post('/orders', verifyJWT, async (req, res) => {
       const order = req.body;
       const result = await orderCollection.insertOne(order);
       res.send(result)
     })
 
-    //4. sob gulo order pawar jonno
-    app.get('/orders', async (req, res) => {
+    //4. Orders API. sob gulo order pawar jonno
+    app.get('/orders', verifyJWT, async (req, res) => {
+      const decoded = req.decoded;
+      console.log(decoded);
+
+      if(decoded.email !== req.query.email){
+        res.status(403).send({message: 'unauthorize access'})
+      }
       let query = {}
       if (req.query.email) {
         query = {
@@ -71,7 +96,7 @@ async function run() {
     })
 
     // 6. update 
-    app.patch('/orders/:id', async (req, res) => {
+    app.patch('/orders/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const status = req.body.status;
       const query = { _id: ObjectId(id) };
@@ -86,7 +111,7 @@ async function run() {
 
 
     //5. delete API
-    app.delete('/orders/:id', async (req, res) => {
+    app.delete('/orders/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await orderCollection.deleteOne(query);
