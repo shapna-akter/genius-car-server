@@ -45,7 +45,7 @@ async function run() {
       })
     }
 
-    //JWT Token
+    //1. Get JWT Token
     app.post('/jwt', (req, res) => {
       const user = req.body;
       // console.log(user);
@@ -55,11 +55,21 @@ async function run() {
 
     // 1. data load korar jonno API banabo
     app.get('/services', async (req, res) => {
-      const query = {} // sobgula k pawar jonno
-      const cursor = serviceCollection.find(query);
-      const services = await cursor.toArray();
-      res.send(services)
-    })
+      const search = req.query.search;
+      console.log(search);
+      let query = {};
+      if (search.length) {
+        query = {
+          $text: {
+            $search: search
+          }
+        }
+      }
+        const order = req.query.order === 'asc' ? 1 : -1; // sort er joono ei line
+        const cursor = serviceCollection.find(query).sort({ price: order }); //price sort korechi
+        const services = await cursor.toArray();
+        res.send(services)
+      })
 
     //2. specifically kono ekta id te jawar jonno API banate hobe
     app.get('/services/:id', async (req, res) => {
@@ -81,8 +91,8 @@ async function run() {
       const decoded = req.decoded;
       console.log(decoded);
 
-      if(decoded.email !== req.query.email){
-        res.status(403).send({message: 'unauthorize access'})
+      if (decoded.email !== req.query.email) {
+        res.status(403).send({ message: 'unauthorize access' })
       }
       let query = {}
       if (req.query.email) {
